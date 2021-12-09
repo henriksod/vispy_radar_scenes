@@ -35,10 +35,8 @@ class Canvas(app.Canvas):
         # Move back camera (zoom)
         # TODO: This is probably not the right way to zoom.
         self.translate = 100
-        self.theta = 0
-        self.phi = 0
 
-        self.gl_parent.model = rotate(90, (0, 0, 1))
+        self.gl_parent.rotate_by(90, (0, 0, 1))
 
         self.update_object_scaling()
         self.apply_zoom()
@@ -57,13 +55,23 @@ class Canvas(app.Canvas):
             gloo.set_state('translucent', clear_color=self.settings.canvas_dark_mode_clear_color)
 
     def on_key_press(self, event):
-        if event.text == ' ':
-            self.theta += .5
-            self.phi += .5
-            self.gl_parent.model = np.dot(rotate(self.theta, (0, 0, 1)),
-                                          rotate(self.phi, (0, 1, 0)))
-            self.gl_parent.update()
-            self.update()
+
+        if event.text == 'q':
+            self.gl_parent.rotate_by(.5, (0, 0, 1))
+            #self.gl_parent.rotate_by(.5, (0, 1, 0))
+        elif event.text == 'e':
+            self.gl_parent.rotate_by(-.5, (0, 0, 1))
+        elif event.text == 'w':
+            self.gl_parent.translate_by(1, 0, 0)
+        elif event.text == 's':
+            self.gl_parent.translate_by(-1, 0, 0)
+        elif event.text == 'a':
+            self.gl_parent.translate_by(0, -1, 0)
+        elif event.text == 'd':
+            self.gl_parent.translate_by(0, 1, 0)
+
+        self.gl_parent.update()
+        self.update()
 
     def on_resize(self, event):
         self.apply_zoom()
