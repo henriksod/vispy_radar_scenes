@@ -11,8 +11,8 @@ from vispy import app, gloo
 from vispy.util.transforms import perspective, translate, rotate
 
 from ..settings import Settings
-from ..utils import ColorOpts, Colors
-from ..gl_objects import GLObjectBuffer, GLRadarDetections, GLRadarDopplerLines, GLCircle
+from ..utils import ColorOpts, Colors, package_resource_path
+from ..gl_objects import GLRadarDetections, GLRadarDopplerLines, GLPolarGrid, GLParentObject, GLMeshObject
 
 from radar_scenes.sensors import get_mounting
 
@@ -21,35 +21,29 @@ from radar_scenes.sensors import get_mounting
 
 class Canvas(app.Canvas):
 
-    gl_object_buffer: Dict[str, GLObjectBuffer] = {}
+    gl_parent = GLParentObject()
 
     def __init__(self, settings: Settings):
         app.Canvas.__init__(self, keys='interactive', size=(800, 600))
         self.settings = settings
 
-        self.gl_object_buffer['detection_points'] = GLRadarDetections()
-        self.gl_object_buffer['detection_vel_lines'] = GLRadarDopplerLines()
-
-        min_circle_range = 10
-        max_circle_range = 100
-        num_circles = 5
-        for i in range(num_circles+1):
-            circle = GLCircle()
-            circle_range = min_circle_range + (max_circle_range - min_circle_range) * (i/float(num_circles))
-            circle.radius = circle_range
-            circle.data['a_color'] = self.settings.grid_circle_color
-            circle.update()
-            self.gl_object_buffer[str(f'circle_{i}')] = circle
+        self.gl_parent.add_child('detection_points', GLRadarDetections())
+        self.gl_parent.add_child('detection_vel_lines', GLRadarDopplerLines())
+        self.gl_parent.add_child('polar_grid', GLPolarGrid(settings=self.settings))
+        self.gl_parent.add_child('car', GLMeshObject(model_path=package_resource_path('res', 'car.stl')))
 
         # Move back camera (zoom)
         # TODO: This is probably not the right way to zoom.
         self.translate = 100
+        self.theta = 0
+        self.phi = 0
 
-        for obj in self.gl_object_buffer.values():
-            obj.model = rotate(90, (0, 0, 1))
+        self.gl_parent.model = rotate(90, (0, 0, 1))
 
         self.update_object_scaling()
         self.apply_zoom()
+
+        gloo.set_state(depth_test=True, blend=False, cull_face=True)
 
         if self.settings.dark_mode:
             gloo.set_state('translucent', clear_color=self.settings.canvas_dark_mode_clear_color)
@@ -62,14 +56,14 @@ class Canvas(app.Canvas):
         else:
             gloo.set_state('translucent', clear_color=self.settings.canvas_dark_mode_clear_color)
 
-    """
     def on_key_press(self, event):
         if event.text == ' ':
-            if self.timer.running:
-                self.timer.stop()
-            else:
-                self.timer.start()
-    """
+            self.theta += .5
+            self.phi += .5
+            self.gl_parent.model = np.dot(rotate(self.theta, (0, 0, 1)),
+                                          rotate(self.phi, (0, 1, 0)))
+            self.gl_parent.update()
+            self.update()
 
     def on_resize(self, event):
         self.apply_zoom()
@@ -79,24 +73,21 @@ class Canvas(app.Canvas):
         self.translate = max(2, self.translate)
 
         self.update_object_scaling()
-
+        self.gl_parent.update()
         self.update()
 
     def on_draw(self, event):
         gloo.clear()
-        for obj in self.gl_object_buffer.values():
-            obj.program.draw(obj.type)
+        self.gl_parent.draw()
 
     def apply_zoom(self):
         gloo.set_viewport(0, 0, self.physical_size[0], self.physical_size[1])
-        for obj in self.gl_object_buffer.values():
-            obj.projection = perspective(45.0, self.size[0] /
-                                         float(self.size[1]), 1.0, 1000.0)
+        self.gl_parent.projection = perspective(45.0, self.size[0] /
+                                                float(self.size[1]), 1.0, 1000.0)
 
     def update_object_scaling(self):
-        for obj in self.gl_object_buffer.values():
-            obj.view = translate((0, 0, -self.translate))
-            obj.scale = max(1/100.0, (1/self.translate) * min(500, self.translate)/500)
+        self.gl_parent.view = translate((0, 0, -self.translate))
+        self.gl_parent.uniform_scale = max(1 / 100.0, (1 / self.translate) * min(500, self.translate) / 500)
 
     def update_scene(self, radar_data, color_by):
         n = len(radar_data["x_cc"])
@@ -110,8 +101,8 @@ class Canvas(app.Canvas):
 
         sensor_yaw = np.array([get_mounting(s_id)["yaw"] for s_id in sensor_id])
 
-        detections = self.gl_object_buffer['detection_points']
-        lines = self.gl_object_buffer['detection_vel_lines']
+        detections = self.gl_parent.lookup_child('detection_points')
+        lines = self.gl_parent.lookup_child('detection_vel_lines')
 
         detections.data['a_position'] = np.zeros((detections.buffer_size, 3))
         detections.data['a_position'][:n, 0] = x_cc
@@ -177,8 +168,5 @@ class Canvas(app.Canvas):
         else:
             lines.visible = False
 
-        #circle_20m.update()
-        lines.update()
-        detections.update()
-
+        self.gl_parent.update()
         self.update()

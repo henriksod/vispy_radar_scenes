@@ -22,8 +22,6 @@ class GLCircle(GLObjectBuffer):
 
         self.program['u_linewidth'] = self.u_linewidth
 
-        self.update()
-
     def update(self):
         self._construct_circle()
         super().update()

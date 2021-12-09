@@ -31,7 +31,8 @@ install_requires = [
     "scipy==1.5.4",
     "shiboken2==5.15.2",
     "six==1.16.0",
-    "vispy==0.9.4"
+    "vispy==0.9.4",
+    "trimesh==3.9.35"
 ]
 
 tests_require = [
@@ -52,7 +53,7 @@ setuptools.setup(
     package_dir={'': 'src'},
     install_requires=install_requires,
     tests_require=tests_require,
-package_data={'': ['*.png', '*.glsl']},
+package_data={'': ['*.png', '*.glsl', '*.stl', '*.obj']},
     keywords=["radar", "classification", "automotive", "machine learning"],
     entry_points={
         'gui_scripts': [
