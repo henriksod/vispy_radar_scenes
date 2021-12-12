@@ -54,7 +54,7 @@ class GLMeshObject(GLObjectBuffer):
                           self.fragment_shader_file)
         
         self.rotate_by(90, (0, 0, 1))
-        self.scale_by(0.1, 0.1, 0.1)
+        self.scale_by(0.06, 0.06, 0.06)
 
     @property
     def type(self):

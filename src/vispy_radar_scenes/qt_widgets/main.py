@@ -152,6 +152,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.info_dock.setWidget(self.detection_info_label)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.info_dock)
 
+        self.canvas.info_label = self.detection_info_label
+
         # Camera Dock Widget
         # TBD, use vispy.scene.widgets.viewbox
 

@@ -48,7 +48,7 @@ class GLCircle(GLObjectBuffer):
     @property
     def center_position(self):
         if not hasattr(self, '_center_position'):
-            self._center_position = (0,0)
+            self._center_position = (0, 0)
         return self._center_position
 
     @center_position.setter

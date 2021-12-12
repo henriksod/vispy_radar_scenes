@@ -83,51 +83,25 @@ class GLObjectBuffer(ABC):
         return self._children_dict[lookup_tag]
 
     def rotate_by(self, degrees, vector):
-        self.transform = np.dot(rotate(degrees, vector), self.transform)
+        self.transform = rotate(degrees, vector) @ self.transform
     
     def scale_by(self, x, y, z):
-        self.transform = np.dot(scale([x, y, z]), self.transform)
+        self.transform = scale([x, y, z]) @ self.transform
     
     def translate_by(self, x, y, z):
-        self.transform = np.dot(translate([x, y, z]), self.transform)
+        self.transform = translate([x, y, z]) @ self.transform
 
     def construct_model(self):
         if not self.model_updated:
             model = np.eye(4, dtype=np.float32)
             if hasattr(self, '_parent'):
-                model = np.dot(self.parent.construct_model(), model)
-            model = np.dot(self.transform, model)
+                model = self.parent.construct_model() @ model
+            model = self.transform @ model
             self.model = model
             self.model_updated = True
         else:
             model = self.model
         return model
-
-    """def global_to_local(self):
-        return self.model
-
-    def local_to_parent(self):
-        if hasattr(self, '_parent'):
-            return np.dot(self.parent.parent_to_local(), self.global_to_local())
-        else:
-            return self.parent_to_local()
-
-    def parent_to_local(self):
-        inv_translation = -self.model[:3, -1]
-        inv_scale_x = np.linalg.norm(self.model[:, 0])
-        inv_scale_x = 0.0 if inv_scale_x == 0.0 else 1.0/inv_scale_x
-        inv_scale_y = np.linalg.norm(self.model[:, 1])
-        inv_scale_y = 0.0 if inv_scale_y == 0.0 else 1.0 / inv_scale_y
-        inv_scale_z = np.linalg.norm(self.model[:, 2])
-        inv_scale_z = 0.0 if inv_scale_z == 0.0 else 1.0 / inv_scale_z
-        inv_rotation = np.linalg.inv(self.model[:3, :3])
-        inv_rotation[:, 0] *= inv_scale_x
-        inv_rotation[:, 1] *= inv_scale_y
-        inv_rotation[:, 2] *= inv_scale_z
-        inv_model = np.zeros((4, 4))
-        inv_model[:3, :3] = inv_rotation
-        inv_model[:3, -1] = np.dot(inv_rotation, inv_translation)
-        return inv_model"""
 
     @property
     def program(self):
